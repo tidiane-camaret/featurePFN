@@ -108,7 +108,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.06)
 
 
 
-"""
+
 print("Starting Training")
 for epoch in range(20):
     total_loss = 0
@@ -133,16 +133,16 @@ pretrained_resnet_backbone = model.backbone
 state_dict = {
     'resnet18_parameters': pretrained_resnet_backbone.state_dict()
 }
-torch.save(state_dict, 'models/pretrained_resnet_backbone.pth')
+torch.save(state_dict, 'models/pretrained_resnet_backbone_'+resnet_features+'.pth')
 """
 
 backbone_new = resnet
 
-ckpt = torch.load('models/pretrained_resnet_backbone.pth')
+ckpt = torch.load('models/pretrained_resnet_backbone_'+resnet_features+'.pth')
 backbone_new.load_state_dict(ckpt['resnet18_parameters'])
 
 model.backbone = backbone_new
-
+"""
 
 def generate_embeddings(model, dataloader):
     """Generates representations for all images in the dataloader with
@@ -169,10 +169,14 @@ labels = [l.item() for l in labels]
 
 
 
-tabpfn_trainsize = 14
+tabpfn_trainsize = 400
 
 X, y = load_breast_cancer(return_X_y=True)
-X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, train_size=tabpfn_trainsize, random_state=42, stratify=labels)
+X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, 
+                                                    train_size=tabpfn_trainsize, 
+                                                    test_size = tabpfn_trainsize*0.2,
+                                                    random_state=42, 
+                                                    stratify=labels)
 
 
 
