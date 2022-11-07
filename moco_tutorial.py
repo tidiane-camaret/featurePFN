@@ -66,7 +66,7 @@ criterion = NTXentLoss(memory_bank_size=4096)
 optimizer = torch.optim.SGD(model.parameters(), lr=0.06)
 
 print("Starting Training")
-for epoch in range(1):
+for epoch in range(20):
     total_loss = 0
     for (x_query, x_key), _, _ in dataloader:
         update_momentum(model.backbone, model.backbone_momentum, m=0.99)
