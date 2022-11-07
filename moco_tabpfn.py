@@ -7,7 +7,7 @@ import copy
 
 import lightly
 from lightly.data import LightlyDataset
-from lightly.data import MoCoCollateFunction
+from lightly.data import MoCoCollateFunction, SimCLRCollateFunction
 from lightly.loss import NTXentLoss
 from lightly.models.modules import MoCoProjectionHead
 from lightly.models.utils import deactivate_requires_grad
@@ -59,10 +59,23 @@ model = MoCo(backbone)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 
-collate_fn = MoCoCollateFunction(input_size=input_size)
+collate_fn = SimCLRCollateFunction(input_size=input_size)
+
+
+train_transforms = torchvision.transforms.Compose([
+    torchvision.transforms.RandomCrop(32, padding=4),
+    torchvision.transforms.RandomHorizontalFlip(),
+    torchvision.transforms.ToTensor(),
+    torchvision.transforms.Normalize(
+        mean=lightly.data.collate.imagenet_normalize['mean'],
+        std=lightly.data.collate.imagenet_normalize['std'],
+    )
+])
 
 cifar10_train = torchvision.datasets.CIFAR10("data/cifar10", download=True)
-dataset_train = LightlyDataset.from_torch_dataset(cifar10_train)
+
+dataset_train = LightlyDataset.from_torch_dataset(cifar10_train)#, transform = train_transforms)
+
 # or create a dataset from a folder containing images or videos:
 # dataset = LightlyDataset("path/to/folder")
 
@@ -78,6 +91,7 @@ dataloader_train = torch.utils.data.DataLoader(
 )
 
 
+
 test_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Resize((input_size, input_size)),
     torchvision.transforms.ToTensor(),
@@ -87,8 +101,10 @@ test_transforms = torchvision.transforms.Compose([
     )
 ])
 
-cifar10_test = torchvision.datasets.CIFAR10("data/cifar10", download=True, transform=test_transforms)
-dataset_test = LightlyDataset.from_torch_dataset(cifar10_test,transform=test_transforms)
+cifar10_test = torchvision.datasets.CIFAR10("data/cifar10", download=True)
+
+dataset_test = LightlyDataset.from_torch_dataset(cifar10_test) #,transform=test_transforms)
+
 # or create a dataset from a folder containing images or videos:
 # dataset = LightlyDataset("path/to/folder")
 
@@ -110,7 +126,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.06)
 
 
 print("Starting Training")
-for epoch in range(20):
+for epoch in range(10):
     total_loss = 0
     for (x_query, x_key), _, _ in dataloader_train:
         update_momentum(model.backbone, model.backbone_momentum, m=0.99)
@@ -133,12 +149,12 @@ pretrained_resnet_backbone = model.backbone
 state_dict = {
     'resnet18_parameters': pretrained_resnet_backbone.state_dict()
 }
-torch.save(state_dict, 'models/pretrained_resnet_backbone_'+resnet_features+'.pth')
+torch.save(state_dict, 'models/pretrained_resnet_backbone_'+str(resnet_features)+'.pth')
 """
 
 backbone_new = resnet
 
-ckpt = torch.load('models/pretrained_resnet_backbone_'+resnet_features+'.pth')
+ckpt = torch.load('models/pretrained_resnet_backbone_'+str(resnet_features)+'.pth')
 backbone_new.load_state_dict(ckpt['resnet18_parameters'])
 
 model.backbone = backbone_new
@@ -169,12 +185,14 @@ labels = [l.item() for l in labels]
 
 
 
-tabpfn_trainsize = 400
+tabpfn_trainsize = 1000
 
 X, y = load_breast_cancer(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+
 X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, 
                                                     train_size=tabpfn_trainsize, 
-                                                    test_size = tabpfn_trainsize*0.2,
+                                                    test_size = int(tabpfn_trainsize*0.2),
                                                     random_state=42, 
                                                     stratify=labels)
 
@@ -183,7 +201,7 @@ X_train, X_test, y_train, y_test = train_test_split(embeddings, labels,
 # N_ensemble_configurations controls the number of model predictions that are ensembled with feature and class rotations (See our work for details).
 # When N_ensemble_configurations > #features * #classes, no further averaging is applied.
 
-classifier = TabPFNClassifier(device='cuda', N_ensemble_configurations=32)
+classifier = TabPFNClassifier(device='cuda:1', N_ensemble_configurations=32)
 
 classifier.fit(X_train, y_train)
 y_eval, p_eval = classifier.predict(X_test, return_winning_probability=True)
