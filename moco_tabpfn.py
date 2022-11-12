@@ -22,9 +22,9 @@ from tabpfn.scripts.transformer_prediction_interface import TabPFNClassifier
 
 
 input_size = 32
-resnet_features = 100
-moco_hidden_features = 512
-moco_projection_features = 128
+resnet_features = 40 #100
+moco_hidden_features = 30 #512
+moco_projection_features = 20 #128
 
 class MoCo(nn.Module):
     def __init__(self, backbone):
@@ -59,22 +59,14 @@ model = MoCo(backbone)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 
-collate_fn = SimCLRCollateFunction(input_size=input_size)
+collate_fn = SimCLRCollateFunction(input_size=input_size,
+                                   gaussian_blur=0.,
+                                    )
 
-
-train_transforms = torchvision.transforms.Compose([
-    torchvision.transforms.RandomCrop(32, padding=4),
-    torchvision.transforms.RandomHorizontalFlip(),
-    torchvision.transforms.ToTensor(),
-    torchvision.transforms.Normalize(
-        mean=lightly.data.collate.imagenet_normalize['mean'],
-        std=lightly.data.collate.imagenet_normalize['std'],
-    )
-])
 
 cifar10_train = torchvision.datasets.CIFAR10("data/cifar10", download=True)
 
-dataset_train = LightlyDataset.from_torch_dataset(cifar10_train)#, transform = train_transforms)
+dataset_train = LightlyDataset.from_torch_dataset(cifar10_train)
 
 # or create a dataset from a folder containing images or videos:
 # dataset = LightlyDataset("path/to/folder")
@@ -95,15 +87,15 @@ dataloader_train = torch.utils.data.DataLoader(
 test_transforms = torchvision.transforms.Compose([
     torchvision.transforms.Resize((input_size, input_size)),
     torchvision.transforms.ToTensor(),
-    torchvision.transforms.Normalize(
-        mean=lightly.data.collate.imagenet_normalize['mean'],
-        std=lightly.data.collate.imagenet_normalize['std'],
-    )
+    #torchvision.transforms.Normalize(
+    #    mean=lightly.data.collate.imagenet_normalize['mean'],
+    #    std=lightly.data.collate.imagenet_normalize['std'],
+    #)
 ])
 
 cifar10_test = torchvision.datasets.CIFAR10("data/cifar10", download=True)
 
-dataset_test = LightlyDataset.from_torch_dataset(cifar10_test) #,transform=test_transforms)
+dataset_test = LightlyDataset.from_torch_dataset(cifar10_test ,transform=test_transforms)
 
 # or create a dataset from a folder containing images or videos:
 # dataset = LightlyDataset("path/to/folder")
