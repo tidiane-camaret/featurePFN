@@ -98,7 +98,7 @@ class SimCLRModel(BenchmarkModule):
         # create a simclr model based on ResNet
         print(self.backbone)
         self.resnet_simclr = \
-            lightly.models.SimCLR(self.backbone, num_ftrs=nb_features)  # add a 2-layer projection head
+            lightly.models.SimCLR(self.backbone, num_ftrs=nb_features, out_dim = nb_features)  # add a 2-layer projection head
         self.criterion = lightly.loss.NTXentLoss()
 
     def forward(self, x):
