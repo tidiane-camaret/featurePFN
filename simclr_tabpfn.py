@@ -6,7 +6,6 @@ import numpy as np
 import lightly
 import argparse
 import models
-input_size = 32
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, help="simclr, simsiam, twins, moco")
@@ -24,17 +23,11 @@ args = parser.parse_args()
 
 
 
-collate_fn = lightly.data.SimCLRCollateFunction(
-    input_size=32,
-    min_scale=0.08,
-    gaussian_blur=0.0,
-    random_gray_scale=0.0,
-    cj_prob=1.0,  # force to do color distortion
-    cj_strength=args.color_strength,
-    hf_prob=0.0,
-)
+
 
 if args.dataset == 'cifar10':
+
+    input_size = 32 
 
     ds_class = torchvision.datasets.CIFAR10
     ds_name = ds_class.__name__
@@ -57,6 +50,7 @@ if args.dataset == 'cifar10':
 
 elif args.dataset == 'mnist':
 
+    input_size = 28
 
     transforms = torchvision.transforms.Compose([
         torchvision.transforms.Grayscale(num_output_channels=3),
@@ -79,6 +73,15 @@ elif args.dataset == 'mnist':
     dataset_train_kNN = lightly.data.LightlyDataset.from_torch_dataset(ds_train_kNN ,transform=test_transforms)
     dataset_test = lightly.data.LightlyDataset.from_torch_dataset(ds_test ,transform=test_transforms)
 
+collate_fn = lightly.data.SimCLRCollateFunction(
+    input_size=28,
+    min_scale=0.08,
+    gaussian_blur=0.0,
+    random_gray_scale=0.0,
+    cj_prob=1.0,  # force to do color distortion
+    cj_strength=args.color_strength,
+    hf_prob=0.0,
+)
 
 dataloader_train_ssl = torch.utils.data.DataLoader(
     dataset_train_ssl,

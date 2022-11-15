@@ -99,14 +99,10 @@ class SimCLRModel(BenchmarkModule):
         super().__init__(dataloader_kNN, epochs)
         # create a ResNet backbone and remove the classification head
         #resnet = lightly.models.ResNetGenerator('resnet-18', num_classes=nb_features)
-        resnet = torchvision.models.resnet18(num_classes = nb_features)
-        self.backbone = resnet
-        """
-        nn.Sequential(
-            *list(resnet.children())[:-1],
-            nn.AdaptiveAvgPool2d(1),
-        )
-        """
+        
+        #self.backbone = torchvision.models.resnet18(num_classes = nb_features)
+        self.backbone = LeNetModel()
+        
         # create a simclr model based on ResNet
         print(self.backbone)
         self.resnet_simclr = \
@@ -197,3 +193,37 @@ def pfn_predict(feature, feature_bank, feature_labels):
     pred_labels, pred_probs = classifier.predict(feature, return_winning_probability=True)
 
     return torch.as_tensor(pred_labels)
+
+
+
+class LeNetModel(torch.nn.Module):
+    def __init__(self, final_dim = 100 ):
+        super(LeNetModel, self).__init__()
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool2d(2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.relu2 = nn.ReLU()
+        self.pool2 = nn.MaxPool2d(2)
+        self.fc1 = nn.Linear(256, 120)
+        self.relu3 = nn.ReLU()
+        self.fc2 = nn.Linear(120, final_dim)
+        self.relu4 = nn.ReLU()
+        self.fc3 = nn.Linear(final_dim, final_dim)
+        self.relu5 = nn.ReLU()
+
+    def forward(self, x):
+        y = self.conv1(x)
+        y = self.relu1(y)
+        y = self.pool1(y)
+        y = self.conv2(y)
+        y = self.relu2(y)
+        y = self.pool2(y)
+        y = y.view(y.shape[0], -1)
+        y = self.fc1(y)
+        y = self.relu3(y)
+        y = self.fc2(y)
+        y = self.relu4(y)
+        y = self.fc3(y)
+        y = self.relu5(y)
+        return y
