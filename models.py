@@ -173,6 +173,12 @@ def knn_predict(feature, feature_bank, feature_labels, classes: int, knn_k: int,
 
 def pfn_predict(feature, feature_bank, feature_labels):
 
+    print("feature shape: ", feature.shape)
+    print("feature_bank shape: ", feature_bank.shape)
+    print("feature_labels shape: ", feature_labels.shape)
+
+    
+
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     classifier = TabPFNClassifier(device=device, N_ensemble_configurations=32)
     classifier.fit(feature_bank, feature_labels)
