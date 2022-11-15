@@ -66,7 +66,7 @@ class BenchmarkModule(pl.LightningModule):
                 feature, self.feature_bank, self.targets_bank, classes, knn_k, knn_t)
             num = images.size(0)
             top1_knn = (pred_labels_knn[:, 0] == targets).float().sum().item()
-            pred_labels_pfn = pfn_predict(feature, self.feature_bank, self.targets_bank)
+            pred_labels_pfn = pfn_predict(feature.cpu(), self.feature_bank.cpu(), self.targets_bank.cpu())
             top1_pfn = (pred_labels_pfn[:, 0] == targets).float().sum().item()
             return (num, top1_knn, top1_pfn)
 
