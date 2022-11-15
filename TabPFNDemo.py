@@ -10,9 +10,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random
 # N_ensemble_configurations controls the number of model predictions that are ensembled with feature and class rotations (See our work for details).
 # When N_ensemble_configurations > #features * #classes, no further averaging is applied.
 
-classifier = TabPFNClassifier(device='cpu', N_ensemble_configurations=32)
+classifier = TabPFNClassifier(device='cpu', N_ensemble_configurations=32, no_preprocess_mode=True)
 
 classifier.fit(X_train, y_train)
 y_eval, p_eval = classifier.predict(X_test, return_winning_probability=True)
 
+print(y_eval)
+print(p_eval.sum().backward())
 print('Accuracy', accuracy_score(y_test, y_eval))

@@ -18,8 +18,11 @@ parser.add_argument("--augs", type=str, default="default", help="augmentation co
 parser.add_argument("--data_folder", type=str, default="./CIFAR10/", help="cifar-10 dataset directory")
 parser.add_argument('--num_workers', type=int, default=8, help='num of workers to use')
 parser.add_argument('--verbose', type=int, default=0, help='verbosity level (0, 1, 2)')
+parser.add_argument('--dataset_name', type=str, default="MNIST", help='dataset name')
 
 args = parser.parse_args()
+
+
 
 collate_fn = lightly.data.SimCLRCollateFunction(
     input_size=32,
@@ -31,32 +34,51 @@ collate_fn = lightly.data.SimCLRCollateFunction(
     hf_prob=0.0,
 )
 
+if args.dataset_name == 'cifar10':
 
-test_transforms = torchvision.transforms.Compose([
-    torchvision.transforms.ToTensor(),
-    torchvision.transforms.Normalize(
-        mean=lightly.data.collate.imagenet_normalize['mean'],
-        std=lightly.data.collate.imagenet_normalize['std'],
-    )
-])
+    ds_class = torchvision.datasets.CIFAR10
+    ds_name = ds_class.__name__
+
+    test_transforms = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(
+            mean=lightly.data.collate.imagenet_normalize['mean'],
+            std=lightly.data.collate.imagenet_normalize['std'],
+        )
+    ])
+    """
+    ds_train_ssl = torchvision.datasets.CIFAR10(root=args.data_folder, train=True, download=True)
+    ds_train_kNN = torchvision.datasets.CIFAR10("data/cifar10", train=False, download=True)
+    ds_test = torchvision.datasets.CIFAR10("data/cifar10", train=False, download=True)
+
+    dataset_train_ssl = lightly.data.LightlyDataset.from_torch_dataset(ds_train_ssl)
+    dataset_train_kNN = lightly.data.LightlyDataset.from_torch_dataset(ds_train_kNN ,transform=test_transforms)
+    dataset_test = lightly.data.LightlyDataset.from_torch_dataset(ds_test ,transform=test_transforms)
+    """
+elif args.dataset_name == 'mnist':
 
 
-dataset_train_ssl = lightly.data.LightlyDataset.from_torch_dataset(
-    torchvision.datasets.CIFAR10(root=args.data_folder, train=True, download=True))
-"""
-# we use test transformations for getting the feature for kNN on train data
-dataset_train_kNN = lightly.data.LightlyDataset.from_torch_dataset(
-    torchvision.datasets.CIFAR10(root=args.data_folder, train=True, download=True, transform=test_transforms))
+    transforms = torchvision.transforms.Compose([
+        torchvision.transforms.Grayscale(num_output_channels=3),
+    ])
 
-dataset_test = lightly.data.LightlyDataset.from_torch_dataset(
-    torchvision.datasets.CIFAR10(root=args.data_folder, train=False, download=True, transform=test_transforms))
+    test_transforms = torchvision.transforms.Compose([
+        torchvision.transforms.Grayscale(num_output_channels=3),
+        torchvision.transforms.ToTensor(),
 
-"""
-cifar10_train_kNN = torchvision.datasets.CIFAR10("data/cifar10", train=False, download=True)
-dataset_train_kNN = lightly.data.LightlyDataset.from_torch_dataset(cifar10_train_kNN ,transform=test_transforms)
+    ])
 
-cifar10_test = torchvision.datasets.CIFAR10("data/cifar10", train=False, download=True)
-dataset_test = lightly.data.LightlyDataset.from_torch_dataset(cifar10_test ,transform=test_transforms)
+    ds_class = torchvision.datasets.MNIST
+    ds_name = ds_class.__name__
+
+ds_test = ds_class("data/"+ ds_name, train=False, download=True)
+ds_train_kNN = ds_class("data/"+ ds_name, train=False, download=True)
+ds_train_ssl = ds_class(root="data/"+ ds_name, train=True, download=True)
+
+dataset_train_ssl = lightly.data.LightlyDataset.from_torch_dataset(ds_train_ssl, transform=transforms)
+dataset_train_kNN = lightly.data.LightlyDataset.from_torch_dataset(ds_train_kNN ,transform=test_transforms)
+dataset_test = lightly.data.LightlyDataset.from_torch_dataset(ds_test ,transform=test_transforms)
+
 
 dataloader_train_ssl = torch.utils.data.DataLoader(
     dataset_train_ssl,
@@ -83,16 +105,7 @@ dataloader_test = torch.utils.data.DataLoader(
     drop_last=False,
     num_workers=args.num_workers
 )
-"""
-# print first element of the dataloader
-for x, y, z in dataloader_train_kNN:
-    print(x)
-    print(y)
-    print(z)
-    break
 
-
-"""
 Model = models.SimCLRModel
 
 # loop through configurations and train models
