@@ -11,7 +11,7 @@ input_size = 32
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, help="simclr, simsiam, twins, moco")
 parser.add_argument("--epochs", type=int, default="800", help="number of training epochs (800 epochs take around 10h on a single V100)")
-parser.add_argument("--batch_size", type=int, default="4", help="batch size")
+parser.add_argument("--batch_size", type=int, default="512", help="batch size")
 parser.add_argument("--num_runs", type=int, default="1", help="number of runs")
 parser.add_argument("--color_strength", type=float, default="0.5", help="color distortion strength")
 parser.add_argument("--augs", type=str, default="default", help="augmentation combinations: default, color, a, ab, abc, abcd, abcde")
