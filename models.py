@@ -5,6 +5,7 @@ import lightly
 import torch.nn.functional as F
 import torchvision
 from tabpfn.scripts.transformer_prediction_interface import TabPFNClassifier
+import numpy as np
 
 knn_k = 200
 knn_t = 0.1
@@ -178,6 +179,12 @@ def pfn_predict(feature, feature_bank, feature_labels):
     print("feature_labels shape: ", feature_labels.shape)
     
     feature_bank = feature_bank.T
+
+    #pick 1000 random features from the feature bank
+    random_indices = np.random.choice(feature_bank.shape[0], 1000, replace=False)
+    feature_bank = feature_bank[:, random_indices]
+    feature_labels = feature_labels[random_indices]
+
 
 
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
