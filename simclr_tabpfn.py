@@ -52,7 +52,7 @@ dataset_test = lightly.data.LightlyDataset.from_torch_dataset(
     torchvision.datasets.CIFAR10(root=args.data_folder, train=False, download=True, transform=test_transforms))
 
 """
-cifar10_train_kNN = torchvision.datasets.CIFAR10("data/cifar10", train=True, download=True)
+cifar10_train_kNN = torchvision.datasets.CIFAR10("data/cifar10", train=False, download=True)
 dataset_train_kNN = lightly.data.LightlyDataset.from_torch_dataset(cifar10_train_kNN ,transform=test_transforms)
 
 cifar10_test = torchvision.datasets.CIFAR10("data/cifar10", train=False, download=True)
@@ -103,6 +103,7 @@ for seed in range(args.num_runs):
     model = Model(dataloader_train_kNN, args.epochs)
     trainer = pl.Trainer(
         max_epochs=args.epochs,
+        devices = [0],
         gpus=int(torch.cuda.is_available()),
         #progress_bar_refresh_rate=args.fresh_rate,
         check_val_every_n_epoch=1,
