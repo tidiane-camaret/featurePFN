@@ -120,6 +120,7 @@ for seed in range(args.num_runs):
         gpus=int(torch.cuda.is_available()),
         #progress_bar_refresh_rate=args.fresh_rate,
         check_val_every_n_epoch=1,
+        #val_check_interval = 1,
         deterministic=True
     )
     trainer.fit(

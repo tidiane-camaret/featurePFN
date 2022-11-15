@@ -67,8 +67,12 @@ class BenchmarkModule(pl.LightningModule):
                 feature, self.feature_bank, self.targets_bank, classes, knn_k, knn_t)
             num = images.size(0)
             top1_knn = (pred_labels_knn[:, 0] == targets).float().sum().item()
+            #print(pred_labels_knn.shape)
+            #print(pred_labels_knn[:, 0] == targets)
             pred_labels_pfn = pfn_predict(feature.cpu(), self.feature_bank.cpu(), self.targets_bank.cpu())
-            top1_pfn = (pred_labels_pfn[:, 0] == targets).float().sum().item()
+            #pred_labels_pfn.cpu()
+            #print(pred_labels_pfn == targets.cpu())
+            top1_pfn = (pred_labels_pfn == targets.cpu()).float().sum().item()
             return (num, top1_knn, top1_pfn)
 
     def validation_epoch_end(self, outputs):
@@ -182,7 +186,7 @@ def pfn_predict(feature, feature_bank, feature_labels):
 
     #pick 1000 random features from the feature bank
     random_indices = np.random.choice(feature_bank.shape[0], 1000, replace=False)
-    feature_bank = feature_bank[:, random_indices]
+    feature_bank = feature_bank[random_indices, :]
     feature_labels = feature_labels[random_indices]
 
 
@@ -192,4 +196,4 @@ def pfn_predict(feature, feature_bank, feature_labels):
     classifier.fit(feature_bank, feature_labels)
     pred_labels, pred_probs = classifier.predict(feature, return_winning_probability=True)
 
-    return pred_labels
+    return torch.as_tensor(pred_labels)
