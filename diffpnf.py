@@ -13,14 +13,10 @@ class LitTransformer(pl.LightningModule):
     def __init__(self,):
         super().__init__()
 
+        self.encoder = nn.Linear(in_features=784,out_features=100)
 
         tabpnf_classifier = TabPFNClassifier(device='cpu', N_ensemble_configurations=32, no_preprocess_mode=True)
         self.tabpfn_transformer = tabpnf_classifier.model[2]
-
-
-        self.encoder = nn.Linear(in_features=784,out_features=100)
-
-
 
     def training_step(self, batch, batch_idx):
 
