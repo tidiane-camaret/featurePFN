@@ -67,7 +67,9 @@ class BenchmarkModule(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         if outputs:
-            # get 10 random features and target pairs
+            # get rid of last batch if it is smaller than batch_size
+            if len(outputs) > 1:
+                outputs = outputs[:-1]
             features, targets = zip(*outputs)
             features = torch.stack(features)
             targets = torch.stack(targets)
