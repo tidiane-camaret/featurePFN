@@ -75,22 +75,23 @@ class BenchmarkModule(pl.LightningModule):
             targets = torch.stack(targets)
             for nb_samples in [10, 50, 100, 500, 1000,]:
                 # get random features and target pairs
-                idxs = np.random.choice(len(features), nb_samples)
+                idxs = np.random.choice(len(features), 1000)
                 features = features[idxs]
                 targets = targets[idxs]
 
+                idxs = np.random.choice(len(features), nb_samples)
+                feature_bank = self.feature_bank[:, idxs]
+                targets_bank = self.targets_bank[:, idxs]
 
-                print(zip(*outputs))
-                feature, targets = outputs[0]
-                print("feature shape", feature.shape)
-                print("targets shape", targets.shape)
+
+                print("feature_bank.shape", feature_bank.shape)
 
                 pred_labels_knn = knn_predict(
-                    feature, self.feature_bank, self.targets_bank, classes, knn_k, knn_t)
-                num = feature.size(0)
+                    features, feature_bank, targets_bank, classes, knn_k, knn_t)
+                num = features.size(0)
                 top1_knn = (pred_labels_knn[:, 0] == targets).float().sum().item()
 
-                pred_labels_pfn = pfn_predict(feature.cpu(), self.feature_bank.cpu(), self.targets_bank.cpu())
+                pred_labels_pfn = pfn_predict(features.cpu(), feature_bank.cpu(), targets_bank.cpu())
 
                 top1_pfn = (pred_labels_pfn == targets.cpu()).float().sum().item()
 
