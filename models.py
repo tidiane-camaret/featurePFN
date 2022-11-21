@@ -61,45 +61,45 @@ class BenchmarkModule(pl.LightningModule):
         # we can only do kNN predictions once we have a feature bank
         if hasattr(self, 'feature_bank') and hasattr(self, 'targets_bank'):
             images, targets, _ = batch
-            feature = self.backbone(images).squeeze()
-            feature = F.normalize(feature, dim=1)
-            return feature, targets
+            features = self.backbone(images).squeeze()
+            features = F.normalize(features, dim=1)
+            return features, targets
 
     def validation_epoch_end(self, outputs):
         if outputs:
-            print(zip(*outputs))
-            feature, targets = outputs[0]
-            print("feature shape", feature.shape)
-            print("targets shape", targets.shape)
+            # get 10 random features and target pairs
+            features, targets = zip(*outputs)
+            features = torch.stack(features)
+            targets = torch.stack(targets)
+            for nb_samples in [10, 50, 100, 500, 1000,]:
+                # get random features and target pairs
+                idxs = np.random.choice(len(features), nb_samples)
+                features = features[idxs]
+                targets = targets[idxs]
 
-            pred_labels_knn = knn_predict(
-                feature, self.feature_bank, self.targets_bank, classes, knn_k, knn_t)
-            num = feature.size(0)
-            top1_knn = (pred_labels_knn[:, 0] == targets).float().sum().item()
 
-            pred_labels_pfn = pfn_predict(feature.cpu(), self.feature_bank.cpu(), self.targets_bank.cpu())
+                print(zip(*outputs))
+                feature, targets = outputs[0]
+                print("feature shape", feature.shape)
+                print("targets shape", targets.shape)
 
-            top1_pfn = (pred_labels_pfn == targets.cpu()).float().sum().item()
-            """
-            total_num = 0
-            total_top1_knn = 0.
-            total_top1_pfn = 0.
-            for (num, top1_knn, top1_pfn) in outputs:
-                total_num += num
-                total_top1_knn += top1_knn
-                total_top1_pfn += top1_pfn
-            """
-            total_top1_knn = top1_knn
-            total_top1_pfn = top1_pfn
-            total_num = num
-            acc_knn = float(total_top1_knn / total_num)
-            acc_pfn = float(total_top1_pfn / total_num)
-            if max(acc_knn, acc_pfn) > self.max_accuracy:
-                self.max_accuracy = max(acc_knn, acc_pfn)
-            print(f'Epoch {self.current_epoch+1}/{self.epochs}: KNN acc = {100*acc_knn:.2f}')
-            print(f'Epoch {self.current_epoch+1}/{self.epochs}: PFN acc = {100*acc_pfn:.2f}')
-            self.log('kNN_accuracy', acc_knn * 100.0, prog_bar=True)
-            self.log('PFN_accuracy', acc_pfn * 100.0, prog_bar=True)
+                pred_labels_knn = knn_predict(
+                    feature, self.feature_bank, self.targets_bank, classes, knn_k, knn_t)
+                num = feature.size(0)
+                top1_knn = (pred_labels_knn[:, 0] == targets).float().sum().item()
+
+                pred_labels_pfn = pfn_predict(feature.cpu(), self.feature_bank.cpu(), self.targets_bank.cpu())
+
+                top1_pfn = (pred_labels_pfn == targets.cpu()).float().sum().item()
+
+                acc_knn = float(top1_knn / num)
+                acc_pfn = float(top1_pfn / num)
+                if max(acc_knn, acc_pfn) > self.max_accuracy:
+                    self.max_accuracy = max(acc_knn, acc_pfn)
+                print(f'Epoch {self.current_epoch+1}/{self.epochs}: KNN acc = {100*acc_knn:.2f} with {nb_samples} samples')
+                print(f'Epoch {self.current_epoch+1}/{self.epochs}: PFN acc = {100*acc_pfn:.2f} with {nb_samples} samples')
+                self.log('kNN_accuracy with {} samples'.format(nb_samples), acc_knn, prog_bar=True)
+                self.log('PFN_accuracy with {} samples'.format(nb_samples), acc_pfn, prog_bar=True)
 
 
 class SimCLRModel(BenchmarkModule):
@@ -188,10 +188,11 @@ def pfn_predict(feature, feature_bank, feature_labels):
     
     feature_bank = feature_bank.T
 
+    if feature_bank.shape[0] >= 1000:
     #pick 1000 random features from the feature bank
-    random_indices = np.random.choice(feature_bank.shape[0], 1000, replace=False)
-    feature_bank = feature_bank[random_indices, :]
-    feature_labels = feature_labels[random_indices]
+        random_indices = np.random.choice(feature_bank.shape[0], 1000, replace=False)
+        feature_bank = feature_bank[random_indices, :]
+        feature_labels = feature_labels[random_indices]
 
 
 
