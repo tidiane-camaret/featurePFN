@@ -63,20 +63,24 @@ class BenchmarkModule(pl.LightningModule):
             images, targets, _ = batch
             feature = self.backbone(images).squeeze()
             feature = F.normalize(feature, dim=1)
-            pred_labels_knn = knn_predict(
-                feature, self.feature_bank, self.targets_bank, classes, knn_k, knn_t)
-            num = images.size(0)
-            top1_knn = (pred_labels_knn[:, 0] == targets).float().sum().item()
-            #print(pred_labels_knn.shape)
-            #print(pred_labels_knn[:, 0] == targets)
-            pred_labels_pfn = pfn_predict(feature.cpu(), self.feature_bank.cpu(), self.targets_bank.cpu())
-            #pred_labels_pfn.cpu()
-            #print(pred_labels_pfn == targets.cpu())
-            top1_pfn = (pred_labels_pfn == targets.cpu()).float().sum().item()
-            return (num, top1_knn, top1_pfn)
+            return feature, targets
 
     def validation_epoch_end(self, outputs):
         if outputs:
+            print(zip(*outputs))
+            feature, targets = outputs[0]
+            print("feature shape", feature.shape)
+            print("targets shape", targets.shape)
+
+            pred_labels_knn = knn_predict(
+                feature, self.feature_bank, self.targets_bank, classes, knn_k, knn_t)
+            num = feature.size(0)
+            top1_knn = (pred_labels_knn[:, 0] == targets).float().sum().item()
+
+            pred_labels_pfn = pfn_predict(feature.cpu(), self.feature_bank.cpu(), self.targets_bank.cpu())
+
+            top1_pfn = (pred_labels_pfn == targets.cpu()).float().sum().item()
+            """
             total_num = 0
             total_top1_knn = 0.
             total_top1_pfn = 0.
@@ -84,6 +88,10 @@ class BenchmarkModule(pl.LightningModule):
                 total_num += num
                 total_top1_knn += top1_knn
                 total_top1_pfn += top1_pfn
+            """
+            total_top1_knn = top1_knn
+            total_top1_pfn = top1_pfn
+            total_num = num
             acc_knn = float(total_top1_knn / total_num)
             acc_pfn = float(total_top1_pfn / total_num)
             if max(acc_knn, acc_pfn) > self.max_accuracy:

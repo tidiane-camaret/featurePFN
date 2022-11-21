@@ -116,11 +116,6 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.06)
 
 
 
-for x, y, z in dataloader_test:
-    print(x)
-    print(y)
-    print(z)
-    break
 
 
 print("Starting Training")
