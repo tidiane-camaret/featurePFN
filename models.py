@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import torchvision
 from tabpfn.scripts.transformer_prediction_interface import TabPFNClassifier
 import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
 
 knn_k = 200
 knn_t = 0.1
@@ -73,28 +74,52 @@ class BenchmarkModule(pl.LightningModule):
             features, targets = zip(*outputs)
             features = torch.stack(features)
             targets = torch.stack(targets)
-            for nb_samples in [10, 50, 100, 500, 1000,]:
+            features = features.reshape(-1, features.shape[-1])
+            targets = targets.reshape(-1)
+            idxs = np.random.choice(features.shape[0], 1000)
+            features = features[idxs]
+            targets = targets[idxs]
+
+            feature_bank = self.feature_bank
+            targets_bank = self.targets_bank
+
+            for nb_samples in [1000,]:
                 # get random features and target pairs
-                idxs = np.random.choice(len(features), 1000)
-                features = features[idxs]
-                targets = targets[idxs]
-
-                idxs = np.random.choice(len(features), nb_samples)
-                feature_bank = self.feature_bank[:, idxs]
-                targets_bank = self.targets_bank[:, idxs]
 
 
+
+                idxs = np.random.choice(self.feature_bank.shape[1], nb_samples)
+                feature_bank = feature_bank[:, idxs]
+                targets_bank = targets_bank[idxs]
+
+                """
                 print("feature_bank.shape", feature_bank.shape)
+                print("targets_bank.shape", targets_bank.shape)
+                """
 
+                
+                """
                 pred_labels_knn = knn_predict(
-                    features, feature_bank, targets_bank, classes, knn_k, knn_t)
-                num = features.size(0)
+                    features, feature_bank, targets_bank, classes, min(nb_samples,knn_k), knn_t)
+                
                 top1_knn = (pred_labels_knn[:, 0] == targets).float().sum().item()
+                """
+
+                neigh = KNeighborsClassifier(n_neighbors=min(nb_samples,knn_k))
+                neigh.fit(feature_bank.cpu().T, targets_bank.cpu())
+
+                pred_labels_knn = neigh.predict(features.cpu())
+                """
+                print(pred_labels_knn)
+                print(targets.cpu())
+                """
+                top1_knn = (pred_labels_knn == targets.cpu().tolist()).sum().item()
 
                 pred_labels_pfn = pfn_predict(features.cpu(), feature_bank.cpu(), targets_bank.cpu())
 
                 top1_pfn = (pred_labels_pfn == targets.cpu()).float().sum().item()
-
+                
+                num = features.size(0)
                 acc_knn = float(top1_knn / num)
                 acc_pfn = float(top1_pfn / num)
                 if max(acc_knn, acc_pfn) > self.max_accuracy:
@@ -184,11 +209,11 @@ def knn_predict(feature, feature_bank, feature_labels, classes: int, knn_k: int,
     return pred_labels
 
 def pfn_predict(feature, feature_bank, feature_labels):
-
+    """
     print("feature shape: ", feature.shape)
     print("feature_bank shape: ", feature_bank.shape)
     print("feature_labels shape: ", feature_labels.shape)
-    
+    """
     feature_bank = feature_bank.T
 
     if feature_bank.shape[0] >= 1000:
