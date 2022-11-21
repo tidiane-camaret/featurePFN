@@ -7,13 +7,10 @@ from torchvision.transforms import ToTensor
 import pytorch_lightning as pl
 import torch
 
-# define any number of nn.Modules (or use your current ones)
-
-
 
 # define the LightningModule
 class LitTransformer(pl.LightningModule):
-    def __init__(self, model):
+    def __init__(self,):
         super().__init__()
 
 
