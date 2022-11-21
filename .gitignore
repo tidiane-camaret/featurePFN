@@ -5,3 +5,4 @@ contrastive2021/CIFAR10/cifar-10-python.tar.gz
 *.pyc
 CIFAR10/
 *.ckpt
+MNIST/
