@@ -17,7 +17,7 @@ parser.add_argument("--augs", type=str, default="default", help="augmentation co
 parser.add_argument("--data_folder", type=str, default="./CIFAR10/", help="cifar-10 dataset directory")
 parser.add_argument('--num_workers', type=int, default=8, help='num of workers to use')
 parser.add_argument('--verbose', type=int, default=0, help='verbosity level (0, 1, 2)')
-parser.add_argument('--dataset', type=str, default="cifar10", help='dataset name')
+parser.add_argument('--dataset', type=str, default="mnist", help='dataset name')
 
 args = parser.parse_args()
 
@@ -74,7 +74,7 @@ elif args.dataset == 'mnist':
     dataset_test = lightly.data.LightlyDataset.from_torch_dataset(ds_test ,transform=test_transforms)
 
 collate_fn = lightly.data.SimCLRCollateFunction(
-    input_size=28,
+    input_size=input_size,
     min_scale=0.08,
     gaussian_blur=0.0,
     random_gray_scale=0.0,
