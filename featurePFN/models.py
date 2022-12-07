@@ -285,15 +285,20 @@ class LeNetPFN(pl.LightningModule):
         features1, features2 = torch.split(features, split_idx)
         target1, target2 = torch.split(target, split_idx)
 
-        self.tabpfn_classifier.fit(features1.detach(), target1.detach())
+        self.tabpfn_classifier.fit(features1, target1)
         target2_hat = self.tabpfn_classifier.predict(features2)
-        #print(target2.shape, target2_hat.shape)
-        #print(target2_hat[:10], F.one_hot(target2[:10]))
-        #print(target2_hat - F.one_hot(target2))
-        print(torch.sum((target2_hat - F.one_hot(target2))**2))
+        #print("target2_hat: ", target2_hat)
+        #print("target2: ", F.one_hot(target2))
 
-        loss = torch.sum((target2_hat - F.one_hot(target2))**2)
-        #loss = F.cross_entropy(target2_hat, target2)
+        #calculate training loss
+        #loss = torch.sum((target2_hat - F.one_hot(target2))**2)
+        loss = torch.nn.CrossEntropyLoss()(target2_hat, target2)
+        self.log('train_loss', loss)
+
+        #calculate training accuracy
+        accuracy = torch.sum(torch.argmax(target2_hat, dim=1) == target2) / target2.shape[0]
+        self.log('train_acc', accuracy)
+
         return loss
 
     def configure_optimizers(self):
